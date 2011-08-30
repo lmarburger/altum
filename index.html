@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html;charset=utf-8">
+  <title>altum.rb</title>
+  <link rel="stylesheet" href="http://jashkenas.github.com/docco/resources/docco.css">
+</head>
+<body>
+<div id='container'>
+  <div id="background"></div>
+  <table cellspacing=0 cellpadding=0>
+  <thead>
+    <tr>
+      <th class=docs><h1>altum.rb</h1></th>
+      <th class=code></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr id='section-1'>
+      <td class=docs>
+        <div class="pilwrap">
+          <a class="pilcrow" href="#section-1">&#182;</a>
+        </div>
+        <p><strong>Altum</strong> uses the magic of Pusher and websockets to drive a <a href="https://github.com/schacon/showoff">ShowOff</a>
+presentation remotely.</p>
+
+<p>Altum consists of a piece of Rack middleware and some JavaScript that keeps
+viewers in sync with the presenter. Getting started is easy.</p>
+
+<p>ShowOff will create a <code>config.ru</code> file when using the command <code>showoff heroku</code>
+or simply create one yourself. Add Altum as you would any other Rack
+middleware supplying it with your Pusher connection URL and a key used to
+identify the presenter.</p>
+
+<pre><code>require &lsquo;showoff&rsquo;
+require &lsquo;altum&rsquo;
+
+use Altum, :pusher_url =&gt; ENV[&lsquo;PUSHER_URL&rsquo;], :key =&gt; &lsquo;sekret&rsquo;
+run ShowOff.new
+</code></pre>
+
+<p>Next, download <a href="https://github.com/lmarburger/altum/blob/master/altum.js">altum.js</a> into your presentation directory. Copy the code
+from the latest <a href="http://js.pusherapp.com/1.9/pusher.min.js">pusher.min.js</a> and paste it at the top of <code>altum.js</code>.</p>
+
+<p>Start the presentation locally with <code>rackup</code> or deploy it to heroku using
+<code>showoff heroku</code>. You&rsquo;re ready to present! Open the presentation as the
+presenter by visiting
+<a href="http://your-app-name.heroku.com?presenter=sekret">http://<em>your-app-name</em>.heroku.com?presenter=sekret</a> and ask those
+observing to follow along with you at
+<a href="http://your-app-name.heroku.com">http://<em>your-app-name</em>.heroku.com</a>. Your observer&rsquo;s browsers will
+follow along with you as you move through your deck; forward, backward, and
+jumping to a specific slide.</p>
+      </td>
+      <td class=code>
+        <div class='highlight'><pre><span class="nb">require</span> <span class="s1">&#39;altum/version&#39;</span>
+<span class="nb">require</span> <span class="s1">&#39;pusher&#39;</span></pre></div>
+      </td>
+    </tr>
+    <tr id='section-2'>
+      <td class=docs>
+        <div class="pilwrap">
+          <a class="pilcrow" href="#section-2">&#182;</a>
+        </div>
+        <p><code>Altum.new</code> takes the downstream <code>app</code> and an <code>options</code> hash. The <code>options</code>
+hash respects two members:</p>
+
+<ul>
+<li><p><code>:pusher_url</code>: the Pusher connection URL passed to <code>Pusher.url=</code>. If you&rsquo;re
+using Pusher as a Heroku add-on, it will be in the environment variable
+<code>PUSHER_URL</code>.</p></li>
+<li><p><code>:key</code>: an optional secret key to identify the presenter pass as a query
+string parameter. If <code>:key</code> is nil or doesn&rsquo;t exist, the default &ldquo;sekret&rdquo; is
+used. Append <code>?presenter=sekret</code> to the ShowOff URL to drive the
+presentation.</p></li>
+</ul>
+      </td>
+      <td class=code>
+        <div class='highlight'><pre><span class="k">class</span> <span class="nc">Altum</span>
+
+  <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="n">options</span><span class="p">)</span>
+    <span class="vi">@app</span> <span class="o">=</span> <span class="n">app</span>
+    <span class="vi">@key</span> <span class="o">=</span> <span class="n">options</span><span class="o">[</span><span class="ss">:key</span><span class="o">]</span> <span class="o">||</span> <span class="s1">&#39;sekret&#39;</span>
+
+    <span class="no">Pusher</span><span class="o">.</span><span class="n">url</span> <span class="o">=</span> <span class="n">options</span><span class="o">[</span><span class="ss">:pusher_url</span><span class="o">]</span>
+  <span class="k">end</span></pre></div>
+      </td>
+    </tr>
+    <tr id='section-3'>
+      <td class=docs>
+        <div class="pilwrap">
+          <a class="pilcrow" href="#section-3">&#182;</a>
+        </div>
+        <p>Listen for slide change commands from the presenter and send the current
+slide out to all those watching. Silently ignore requests from a presenter
+using an incorrect key.</p>
+      </td>
+      <td class=code>
+        <div class='highlight'><pre>  <span class="k">def</span> <span class="nf">call</span><span class="p">(</span><span class="n">env</span><span class="p">)</span>
+    <span class="n">request</span> <span class="o">=</span> <span class="no">Rack</span><span class="o">::</span><span class="no">Request</span><span class="o">.</span><span class="n">new</span> <span class="n">env</span>
+
+    <span class="k">if</span> <span class="n">slide_path?</span> <span class="n">request</span>
+      <span class="n">change_slide</span> <span class="n">request</span> <span class="k">if</span> <span class="n">presenter?</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+
+      <span class="o">[</span> <span class="mi">204</span><span class="p">,</span> <span class="p">{},</span> <span class="o">[]</span> <span class="o">]</span>
+    <span class="k">else</span>
+      <span class="vi">@app</span><span class="o">.</span><span class="n">call</span> <span class="n">env</span>
+    <span class="k">end</span>
+  <span class="k">end</span>
+
+<span class="kp">protected</span></pre></div>
+      </td>
+    </tr>
+    <tr id='section-4'>
+      <td class=docs>
+        <div class="pilwrap">
+          <a class="pilcrow" href="#section-4">&#182;</a>
+        </div>
+        <p>Respond only to requests for <code>/slide</code>.</p>
+      </td>
+      <td class=code>
+        <div class='highlight'><pre>  <span class="k">def</span> <span class="nf">slide_path?</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+    <span class="n">request</span><span class="o">.</span><span class="n">path</span> <span class="o">==</span> <span class="s1">&#39;/slide&#39;</span>
+  <span class="k">end</span></pre></div>
+      </td>
+    </tr>
+    <tr id='section-5'>
+      <td class=docs>
+        <div class="pilwrap">
+          <a class="pilcrow" href="#section-5">&#182;</a>
+        </div>
+        <p>Match the key supplied in the request with the key used when the middlware
+was configured.</p>
+      </td>
+      <td class=code>
+        <div class='highlight'><pre>  <span class="k">def</span> <span class="nf">presenter?</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+    <span class="n">request</span><span class="o">.</span><span class="n">params</span><span class="o">[</span><span class="s1">&#39;key&#39;</span><span class="o">]</span> <span class="o">==</span> <span class="vi">@key</span>
+  <span class="k">end</span></pre></div>
+      </td>
+    </tr>
+    <tr id='section-6'>
+      <td class=docs>
+        <div class="pilwrap">
+          <a class="pilcrow" href="#section-6">&#182;</a>
+        </div>
+        <p>Grab the current slide number from the <code>number</code> parameter of the request.
+Pass it to those observing by triggering the <code>presenter</code> channel&rsquo;s
+<code>slide_change</code> event.</p>
+
+      </td>
+      <td class=code>
+        <div class='highlight'><pre>  <span class="k">def</span> <span class="nf">change_slide</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+    <span class="no">Pusher</span><span class="o">[</span><span class="s1">&#39;presenter&#39;</span><span class="o">].</span><span class="n">trigger</span><span class="p">(</span><span class="s1">&#39;slide_change&#39;</span><span class="p">,</span> <span class="p">{</span>
+      <span class="s1">&#39;slide&#39;</span> <span class="o">=&gt;</span> <span class="n">request</span><span class="o">.</span><span class="n">params</span><span class="o">[</span><span class="s1">&#39;number&#39;</span><span class="o">]</span>
+    <span class="p">})</span>
+  <span class="k">end</span>
+
+<span class="k">end</span></pre></div>
+      </td>
+    </tr>
+  </table>
+</div>
+</body>
