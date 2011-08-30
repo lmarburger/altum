@@ -4,8 +4,8 @@ require File.expand_path('../lib/altum/version', __FILE__)
 Gem::Specification.new do |gem|
   gem.authors       = ["Larry Marburger"]
   gem.email         = ["larry@marburger.cc"]
-  gem.description   = %q{Present remotely}
-  gem.summary       = %q{Altum uses the magic of Pusher and websockets to drive a ShowOff presentation remotely. The simplest tool when you need to walk through a deck on a conference call.}
+  gem.description   = %q{Drive ShowOff remotely}
+  gem.summary       = %q{Altum uses the magic of Pusher and websockets to drive a ShowOff presentation remotely. The simplest tool to walk through a deck on a conference call.}
   gem.homepage      = "http://lmarburger.github.com/altum/"
 
   gem.add_dependency 'pusher'
