@@ -4,6 +4,10 @@
 # Altum consists of a piece of Rack middleware and some JavaScript that keeps
 # viewers in sync with the presenter. Getting started is easy.
 #
+# Install Altum with Rubygems:
+#
+#     gem install altum
+#
 # ShowOff will create a `config.ru` file when using the command `showoff heroku`
 # or simply create one yourself. Add Altum as you would any other Rack
 # middleware supplying it with your Pusher connection URL and a key used to
