@@ -1,3 +1,5 @@
+# [![Build Status](http://travis-ci.org/lmarburger/altum.png)](http://travis-ci.org/lmarburger/altum)
+#
 # **Altum** uses the magic of Pusher and websockets to drive a [ShowOff][]
 # presentation remotely.
 #
